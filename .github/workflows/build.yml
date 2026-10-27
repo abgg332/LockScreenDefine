@@ -1,0 +1,122 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.scheme }}
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scheme: roothide
+          - scheme: rootless
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install roothide/theos
+        run: |
+          set -e
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos)"
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
+
+      - name: Fetch iOS 16.5 SDK
+        run: |
+          set -e
+          SDK_DIR="$THEOS/sdks"
+          mkdir -p "$SDK_DIR"
+          if [ ! -d "$SDK_DIR/iPhoneOS16.5.sdk" ]; then
+            echo "==> 从 theos/sdks 拉取 iPhoneOS16.5.sdk（稀疏 clone，仅该目录）"
+            cd "$RUNNER_TEMP"
+            git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git theos-sdks
+            cd theos-sdks
+            git sparse-checkout set iPhoneOS16.5.sdk
+            mv iPhoneOS16.5.sdk "$SDK_DIR/"
+          fi
+          ls -la "$SDK_DIR"
+          test -d "$SDK_DIR/iPhoneOS16.5.sdk"
+
+      - name: Build ${{ matrix.scheme }}
+        env:
+          PKG_SCHEME: ${{ matrix.scheme }}
+        run: |
+          set -e
+          echo "==> 生成 $PKG_SCHEME 源码目录"
+          ./scripts/make_dist.sh "$PKG_SCHEME" "$RUNNER_TEMP/src"
+          cd "$RUNNER_TEMP/src"
+          make clean || true
+          echo "==> 编译（THEOS_PACKAGE_SCHEME=$PKG_SCHEME）"
+          make package FINALPACKAGE=1 PRINT_PACKAGE_NAME=1
+          echo "==> 产物："
+          ls -lh packages/
+          mkdir -p "$GITHUB_WORKSPACE/out/$PKG_SCHEME"
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/$PKG_SCHEME/"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.scheme }}
+          path: out/${{ matrix.scheme }}/*.deb
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all debs
+        uses: actions/download-artifact@v4
+        with:
+          path: debs
+          pattern: deb-*
+          merge-multiple: true
+
+      - name: Show debs
+        run: find debs -type f -name '*.deb' -exec ls -lh {} \;
+
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: 锁屏定义 v1.0.0（RootHide + Rootless 双包）
+          body: |
+            ## 锁屏定义 v1.0.0
+
+            自定义锁屏通知宽度。设置 → 锁屏定义 可开关并拖动滑块调节（50%–100%，100% 为系统默认）。
+
+            ### 安装包
+
+            | 包 | 适用环境 |
+            |---|---|
+            | `*roothide*.deb` | Dopamine 2 **隐根 / RootHide**（越狱根为随机目录） |
+            | `*rootless*.deb` | Dopamine 原生 **rootless**（固定 `/var/jb`）、palera1n rootless |
+
+            两个包包名不同，可同时下载但**请只安装与你环境匹配的那一个**。
+
+            ### 安装
+
+            ```bash
+            dpkg -i com.lockdefine.lockscreendefine.*.deb
+            killall -9 SpringBoard
+            ```
+            或用 Sileo / Zebra 直接打开 deb 安装。
+
+            ### 使用
+
+            设置 → 锁屏定义 → 打开「启用宽度自定义」→ 拖动「通知宽度」滑块。
+            修改后锁屏立即刷新，无需注销。
+          files: debs/*.deb
+          fail_on_unmatched_files: true
