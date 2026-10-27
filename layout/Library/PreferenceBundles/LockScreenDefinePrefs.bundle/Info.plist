@@ -1,0 +1,13 @@
+{
+	CFBundleDevelopmentRegion = "zh_CN";
+	CFBundleExecutable = "LockScreenDefinePrefs";
+	CFBundleIdentifier = "com.lockdefine.prefs";
+	CFBundleInfoDictionaryVersion = "6.0";
+	CFBundleName = "LockScreenDefinePrefs";
+	CFBundleDisplayName = "锁屏定义";
+	CFBundlePackageType = "BNDL";
+	CFBundleShortVersionString = "1.0.0";
+	CFBundleVersion = "1.0.0";
+	CFBundleSignature = "????";
+	NSPrincipalClass = "LDWRootListController";
+}
