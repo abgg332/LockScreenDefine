@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>锁屏定义 · 效果预览</title>
+<style>
+  :root{
+    --bg:#000; --card:rgba(28,28,30,.72); --card2:rgba(44,44,46,.9);
+    --label:#fff; --label2:rgba(235,235,245,.6); --sep:rgba(84,84,88,.35);
+    --accent:#0a84ff; --settings-bg:#000; --settings-card:#1c1c1e;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f2f2f7; --card:#fff; --label:#000; --label2:rgba(60,60,67,.6);
+           --sep:rgba(60,60,67,.2); --settings-bg:#f2f2f7; --settings-card:#fff; }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,"SF Pro Text","PingFang SC",system-ui,sans-serif;
+       background:#0a0a0c;color:#fff;display:flex;flex-direction:column;align-items:center;
+       min-height:100vh;padding:28px 16px 40px}
+  h1{font-size:17px;font-weight:600;margin:0 0 4px;letter-spacing:.2px}
+  .sub{font-size:12px;color:rgba(235,235,245,.55);margin-bottom:22px;text-align:center;line-height:1.6}
+
+  .stage{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+
+  /* ── 手机外框 ── */
+  .phone{width:320px;height:660px;border-radius:48px;background:#000;position:relative;
+         border:9px solid #2a2a2e;box-shadow:0 24px 60px rgba(0,0,0,.65),inset 0 0 0 1px #000;overflow:hidden}
+  .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:26px;
+         background:#000;border-radius:0 0 16px 16px;z-index:20}
+  .wall{position:absolute;inset:0;background:
+        radial-gradient(120% 80% at 30% 8%, #3b2b6b 0%, #1a1533 42%, #050509 78%);
+        }
+  .wall::after{content:"";position:absolute;inset:0;
+        background:radial-gradient(70% 40% at 70% 90%, rgba(90,40,120,.45), transparent 70%)}
+
+  .lockui{position:absolute;inset:0;display:flex;flex-direction:column;padding:44px 0 16px;z-index:5}
+
+  /* 锁屏时间 */
+  .clock{text-align:center;color:#fff;margin-top:14px}
+  .clock .date{font-size:13px;font-weight:500;letter-spacing:.2px;opacity:.9}
+  .clock .time{font-size:74px;font-weight:600;letter-spacing:-2px;line-height:1.02;margin-top:2px;
+               text-shadow:0 2px 18px rgba(0,0,0,.35)}
+
+  /* 通知区 */
+  .notifs{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+          gap:9px;padding:0 14px 12px;overflow:hidden}
+  .notif{width:calc(var(--w) * 1%);max-width:100%;margin:0 auto;
+         background:rgba(30,30,34,.72);border-radius:19px;padding:10px 12px;display:flex;gap:10px;
+         align-items:flex-start;backdrop-filter:blur(22px) saturate(180%);
+         -webkit-backdrop-filter:blur(22px) saturate(180%);
+         transition:width .22s cubic-bezier(.32,.72,0,1);
+         border:1px solid rgba(255,255,255,.08)}
+  .ic{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;
+      font-size:16px;color:#fff}
+  .ic.msg{background:linear-gradient(160deg,#5ff07a,#19b94a)}
+  .ic.mail{background:linear-gradient(160deg,#5ac8fa,#0a84ff)}
+  .ic.cal{background:linear-gradient(160deg,#ff6b6b,#ff2d55)}
+  .body{min-width:0;flex:1}
+  .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .app{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap;
+       overflow:hidden;text-overflow:ellipsis}
+  .ts{font-size:11px;color:rgba(235,235,245,.6);flex:none}
+  .ttl{font-size:12.5px;color:#fff;margin-top:2px;font-weight:500;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .msg{font-size:12px;color:rgba(255,255,255,.82);margin-top:1px;line-height:1.35;
+       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  .lockfoot{display:flex;justify-content:space-between;padding:0 30px;color:rgba(255,255,255,.55);font-size:18px}
+  .bar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:112px;height:4px;
+       border-radius:2px;background:rgba(255,255,255,.75)}
+
+  /* ── 设置面板 ── */
+  .panel{width:320px;margin-top:0}
+  .ph-title{text-align:center;font-size:12px;color:rgba(235,235,245,.5);margin-bottom:10px;
+            letter-spacing:.4px;text-transform:uppercase}
+  .settings{background:var(--settings-bg);border:9px solid #2a2a2e;border-radius:46px;padding:0;
+            height:660px;overflow:hidden;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.65)}
+  .nav{height:52px;display:flex;align-items:center;justify-content:center;position:relative;
+       font-size:16px;font-weight:600;border-bottom:.5px solid var(--sep);color:var(--label)}
+  .nav .back{position:absolute;left:16px;color:var(--accent);font-size:16px;font-weight:400;display:flex;align-items:center;gap:2px}
+  .content{height:calc(660px - 52px);overflow-y:auto;padding:18px 16px 30px;background:var(--settings-bg)}
+  .content::-webkit-scrollbar{width:0}
+
+  .sec-label{font-size:12.5px;font-weight:600;color:var(--label2);margin:0 4px 8px;letter-spacing:.2px}
+  .card{background:var(--settings-card);border-radius:12px;overflow:hidden;margin-bottom:22px}
+
+  .row{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;min-height:52px}
+  .row .lt{font-size:16px;color:var(--label);line-height:1.2}
+  .row .ls{font-size:11.5px;color:var(--label2);margin-top:2px}
+
+  /* 开关 */
+  .sw{width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.32);position:relative;
+      cursor:pointer;transition:background .22s;flex:none}
+  .sw.on{background:#30d158}
+  .sw i{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;
+        box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .22s cubic-bezier(.3,1.3,.5,1)}
+  .sw.on i{transform:translateX(20px)}
+
+  /* 滑块 */
+  .slider-box{padding:13px 16px 11px}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .slider-head .lt{font-size:16px;color:var(--label)}
+  .pct{font-size:16px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;
+       font-feature-settings:"tnum"}
+  .range{position:relative;height:28px;display:flex;align-items:center}
+  input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;
+      background:rgba(120,120,128,.3);outline:none;margin:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:27px;height:27px;
+      border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer}
+  .hints{display:flex;justify-content:space-between;font-size:11px;color:var(--label2);margin-top:3px}
+
+  .btn-row{padding:0}
+  .btn{width:100%;border:0;background:transparent;color:var(--accent);font-size:16px;
+       padding:15px;cursor:pointer;font-family:inherit}
+
+  .foot{font-size:11.5px;color:var(--label2);line-height:1.6;margin:-12px 4px 0}
+
+  .meter{display:flex;gap:2px;margin-top:10px}
+  .meter span{flex:1;height:3px;border-radius:2px;background:rgba(120,120,128,.28)}
+  .meter span.on{background:var(--accent)}
+  .meter-txt{font-size:10.5px;color:var(--label2);margin-top:6px;text-align:center}
+</style>
+</head>
+<body>
+  <h1>锁屏定义 · 效果预览</h1>
+  <div class="sub">左侧锁屏通知宽度会跟随右侧设置实时变化 · 与插件实际行为一致</div>
+
+  <div class="stage">
+    <!-- 锁屏 -->
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="wall"></div>
+      <div class="lockui">
+        <div class="clock">
+          <div class="date" id="dateText">10月27日 星期一</div>
+          <div class="time" id="timeText">19:21</div>
+        </div>
+        <div class="notifs" id="notifs">
+          <div class="notif" style="--w:92">
+            <div class="ic msg">💬</div>
+            <div class="body">
+              <div class="top"><span class="app">信息</span><span class="ts">现在</span></div>
+              <div class="ttl">林小雨</div>
+              <div class="msg">晚上一起吃饭吗？我订了那家新开的店</div>
+            </div>
+          </div>
+          <div class="notif" style="--w:92">
+            <div class="ic mail">✉️</div>
+            <div class="body">
+              <div class="top"><span class="app">邮件</span><span class="ts">18:40</span></div>
+              <div class="ttl">本期项目周报已提交</div>
+              <div class="msg">附件包含三张图表，请查收。</div>
+            </div>
+          </div>
+          <div class="notif" style="--w:92">
+            <div class="ic cal">📅</div>
+            <div class="body">
+              <div class="top"><span class="app">日历</span><span class="ts">17:05</span></div>
+              <div class="ttl">明天 10:00 产品评审</div>
+              <div class="msg">会议室 B302</div>
+            </div>
+          </div>
+        </div>
+        <div class="lockfoot"><span>🔦</span><span>📷</span></div>
+      </div>
+      <div class="bar"></div>
+    </div>
+
+    <!-- 设置 -->
+    <div class="panel">
+      <div class="ph-title">设置 App</div>
+      <div class="settings">
+        <div class="nav"><span class="back">‹ 设置</span>锁屏定义</div>
+        <div class="content">
+          <div class="sec-label">预览</div>
+          <div class="card" style="padding:16px 0 14px;margin-bottom:22px">
+            <div style="padding:0 16px">
+              <div style="width:calc(var(--pw,92) * 1% - 0px);margin:0 auto;background:rgba(120,120,128,.22);
+                          border-radius:10px;height:46px;display:flex;align-items:center;gap:8px;padding:0 10px;
+                          transition:width .22s cubic-bezier(.32,.72,0,1)" id="pv1">
+                <span style="width:16px;height:16px;border-radius:4px;background:var(--accent);opacity:.85;flex:none"></span>
+                <span style="height:5px;border-radius:3px;background:rgba(120,120,128,.75);width:55%"></span>
+              </div>
+              <div style="width:calc(var(--pw,92) * 1% - 0px);margin:10px auto 0;background:rgba(120,120,128,.18);
+                          border-radius:8px;height:32px;display:flex;align-items:center;gap:8px;padding:0 10px;
+                          transition:width .22s cubic-bezier(.32,.72,0,1)" id="pv2">
+                <span style="width:14px;height:14px;border-radius:3px;background:var(--accent);opacity:.7;flex:none"></span>
+                <span style="height:5px;border-radius:3px;background:rgba(120,120,128,.6);width:40%"></span>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:11px;color:var(--label2);margin-top:10px">
+              宽度按可用宽度百分比计算，100% 即系统默认
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <div>
+                <div class="lt">启用宽度自定义</div>
+                <div class="ls">关闭后恢复系统默认宽度</div>
+              </div>
+              <div class="sw on" id="toggle"><i></i></div>
+            </div>
+          </div>
+
+          <div class="card" id="sliderCard">
+            <div class="slider-box">
+              <div class="slider-head">
+                <span class="lt">通知宽度</span>
+                <span class="pct" id="pctText">92%</span>
+              </div>
+              <div class="range">
+                <input type="range" min="50" max="100" step="1" value="92" id="slider">
+              </div>
+              <div class="hints"><span>50% 更窄</span><span>更宽 100%</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <button class="btn" id="reset">恢复默认设置</button>
+          </div>
+
+          <div class="foot">
+            宽度作用于锁屏通知列表，下拉通知中心里的同一份列表也会同步。修改后立即生效。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:26px;width:320px">
+    <div class="meter" id="meter"></div>
+    <div class="meter-txt" id="meterTxt">当前通知宽度 92% · 相对系统默认</div>
+  </div>
+
+<script>
+  const slider  = document.getElementById('slider');
+  const pctText = document.getElementById('pctText');
+  const toggle  = document.getElementById('toggle');
+  const sliderCard = document.getElementById('sliderCard');
+  const notifs  = document.querySelectorAll('.notif');
+  const pv1 = document.getElementById('pv1');
+  const pv2 = document.getElementById('pv2');
+  const meter = document.getElementById('meter');
+  const meterTxt = document.getElementById('meterTxt');
+
+  // 10 格刻度
+  for (let i = 0; i < 10; i++) meter.appendChild(document.createElement('span'));
+  const cells = meter.querySelectorAll('span');
+
+  let enabled = true;
+
+  function apply(v){
+    v = Math.round(v);
+    pctText.textContent = v + '%';
+    const ratio = enabled ? v / 100 : 1;
+
+    notifs.forEach(n => n.style.setProperty('--w', (ratio * 100).toFixed(1)));
+    pv1.style.width = `calc(${(ratio*100).toFixed(1)}% )`;
+    pv2.style.width = `calc(${(ratio*100).toFixed(1)}% )`;
+
+    sliderCard.style.opacity = enabled ? 1 : .42;
+    sliderCard.style.pointerEvents = enabled ? 'auto' : 'none';
+    pctText.style.color = enabled ? 'var(--accent)' : 'var(--label2)';
+
+    // 刻度：50~100 映射 0~10
+    const filled = Math.round((v - 50) / 5);
+    cells.forEach((c, i) => c.classList.toggle('on', enabled && i < filled));
+
+    meterTxt.textContent = enabled
+      ? `当前通知宽度 ${v}% · 相对系统默认`
+      : '已关闭 · 使用系统默认宽度 100%';
+  }
+
+  slider.addEventListener('input', e => apply(e.target.value));
+
+  toggle.addEventListener('click', () => {
+    enabled = !enabled;
+    toggle.classList.toggle('on', enabled);
+    apply(slider.value);
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    enabled = true;
+    toggle.classList.add('on');
+    slider.value = 92;
+    // 支持 ?w=65 指定初始宽度，便于演示
+  const params = new URLSearchParams(location.search);
+  const initW = Math.min(100, Math.max(50, parseInt(params.get('w') || '92', 10)));
+  slider.value = initW;
+  apply(initW);
+  });
+
+  // 时间
+  function tick(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    document.getElementById('timeText').textContent = hh + ':' + mm;
+    const wd = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
+    document.getElementById('dateText').textContent = `${d.getMonth()+1}月${d.getDate()}日 ${wd}`;
+  }
+  tick(); setInterval(tick, 10000);
+
+  // 支持 ?w=65 指定初始宽度，便于演示
+  const params = new URLSearchParams(location.search);
+  const initW = Math.min(100, Math.max(50, parseInt(params.get('w') || '92', 10)));
+  slider.value = initW;
+  apply(initW);
+</script>
+</body>
+</html>
