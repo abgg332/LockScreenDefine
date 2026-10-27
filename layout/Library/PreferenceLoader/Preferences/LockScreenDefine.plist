@@ -1,0 +1,10 @@
+{
+	entry = {
+		bundle = "LockScreenDefinePrefs";
+		cell = PSLinkCell;
+		detail = "LDWRootListController";
+		icon = "icon.png";
+		isController = 1;
+		label = "锁屏定义";
+	};
+}
