@@ -1,0 +1,10 @@
+{
+	Filter = {
+		Bundles = (
+			"com.apple.springboard",
+			"com.apple.notificationcenterui",
+			"com.apple.UserNotificationsUI",
+			"com.apple.springboardhome"
+		);
+	};
+}
