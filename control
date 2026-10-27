@@ -1,0 +1,10 @@
+Package: com.lockdefine.lockscreendefine
+Name: 锁屏定义
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Description: 自定义锁屏通知宽度。提供开关与滑块，实时调整锁屏（及通知中心）通知卡片的宽度并保持居中显示。
+Maintainer: LockScreenDefine
+Author: LockScreenDefine
+Section: Tweaks
+Icon: file:///Library/PreferenceBundles/LockScreenDefinePrefs.bundle/icon.png
